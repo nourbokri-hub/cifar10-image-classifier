@@ -2,10 +2,21 @@ import streamlit as st
 import requests
 from PIL import Image
 import io
+import os
+import pandas as pd
 
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
 st.set_page_config(page_title="CIFAR-10 Classifier", page_icon="🧠", layout="wide")
+with st.sidebar:
+    st.header("Project Info")
+    st.write("**Dataset:** CIFAR-10")
+    st.write("**Model:** ResNet18")
+    st.write("**Framework:** PyTorch")
+    st.write("**API:** FastAPI")
+    st.write("**Tracking:** MLflow")
+    st.write("**Docker:** docker-compose")
+    st.write("**Accuracy:** 77.92%")
 
 # --- Minimal CSS for a more "pro" look ---
 st.markdown(
@@ -44,7 +55,7 @@ with col1:
     if uploaded is not None:
         image_bytes = uploaded.getvalue()
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        st.image(img, caption="Uploaded image", width=350)
+        st.image(img, caption="Uploaded image", use_column_width=True)
 
 
 with col2:
@@ -59,14 +70,29 @@ with col2:
         if predict_btn:
             files = {"file": (uploaded.name, uploaded.getvalue(), uploaded.type)}
             try:
-                r = requests.post(API_URL, files=files, timeout=30)
+                with st.spinner("Running inference..."):
+                  r = requests.post(API_URL, files=files, timeout=30)
                 if r.status_code == 200:
                     data = r.json()
 
                     pred = data.get("prediction", "N/A")
                     conf = float(data.get("confidence", 0.0))
 
-                    st.markdown(f'<div class="big-result">✅ {pred.upper()}</div>', unsafe_allow_html=True)
+                    st.markdown(
+    f"""
+    <div style="
+        background: linear-gradient(90deg, #4CAF50, #00C9A7);
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 30px;
+        font-weight: bold;
+        color: white;">
+        {pred.upper()}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
                     st.markdown(f'<div class="muted">Confidence: {conf*100:.2f}%</div>', unsafe_allow_html=True)
                     st.progress(min(max(conf, 0.0), 1.0))
 
@@ -74,6 +100,9 @@ with col2:
 
                     st.markdown("### Top-3 classes")
                     top3 = data.get("top3", [])
+                    df = pd.DataFrame(top3)
+                    st.bar_chart(df.set_index("class"))
+                    
                     for item in top3:
                         c = item["class"]
                         p = float(item["confidence"])
@@ -85,8 +114,7 @@ with col2:
                     st.code(r.text)
             except Exception as e:
                 st.error(f"Connection error: {e}")
-                st.info("Make sure FastAPI is running: uvicorn api.main:app --reload")
-
+                st.info("Make sure the API is running. Locally: uvicorn api.main:app --reload | Docker: docker compose up")
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")

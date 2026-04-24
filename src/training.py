@@ -54,7 +54,7 @@ def evaluate(model, loader, criterion, device):
     return val_loss, val_acc
 
 
-def main(epochs=2, batch_size=64, lr=1e-3):
+def main(epochs=10, batch_size=64, lr=1e-3):
     """
     Simple but professional baseline training with MLflow tracking.
     """
@@ -87,6 +87,9 @@ def main(epochs=2, batch_size=64, lr=1e-3):
                   f"val_loss={val_loss:.4f}, val_acc={val_acc:.4f}")
 
         # Save model weights locally
+        final_accuracy = val_acc * 100
+        print(f"Final Test Accuracy: {final_accuracy:.2f}%")
+        mlflow.log_metric("final_accuracy", final_accuracy)
         torch.save(model.state_dict(), "model.pt")
         mlflow.log_artifact("model.pt")
 
