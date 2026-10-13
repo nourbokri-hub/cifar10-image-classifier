@@ -1,72 +1,100 @@
 # CIFAR-10 Vision AI
 
-Application de classification d’images CIFAR-10 réunissant un modèle PyTorch,
-une API FastAPI et une interface Streamlit. Le projet couvre l’entraînement et
-le suivi des expériences avec MLflow, ainsi que le lancement local ou avec
-Docker Compose.
+Application de classification d'images développée avec **PyTorch, ResNet18, FastAPI et Streamlit**.
 
-> **Checkpoint requis :** l’API et le conteneur API ont besoin du fichier
-> `model.pt` à la racine du projet. Ce fichier est actuellement exclu de Git :
-> il n’est donc pas présent dans un clone standard du dépôt. Placez le checkpoint
-> fourni séparément à cet emplacement avant de lancer l’API ou Docker Compose.
-> Le fichier n’est ni fourni ni recréé automatiquement par les commandes de
-> démarrage.
+Ce projet a pour objectif de concevoir, entraîner, évaluer et exploiter un modèle de Deep Learning capable de reconnaître automatiquement 10 catégories d'images du jeu de données CIFAR-10.
+
+Il couvre les principales étapes d'un pipeline de Machine Learning : préparation des données, entraînement, évaluation, suivi des expériences avec MLflow et utilisation du modèle à travers une API et une interface web.
+
+Le projet peut être exécuté localement ou à l'aide de Docker Compose.
 
 ## Résultats du modèle
 
-Le checkpoint `model.pt` a été évalué sur les 10 000 images du jeu de test
-CIFAR-10 :
+Le modèle ResNet18 enregistré dans `model.pt` a été évalué sur les 10 000 images du jeu de test CIFAR-10.
 
-| Mesure | Résultat |
-|---|---:|
-| Accuracy | **77,92 %** |
-| Test loss | **0,6478** |
-| Prédictions correctes | **7 792 / 10 000** |
+| Métrique | Résultat |
+|---|---|
+| Architecture | ResNet18 |
+| Précision (Accuracy) | **77,92 %** |
+| Perte sur le jeu de test | **0,6478** |
+| Images correctement classées | **7 792 / 10 000** |
+| Nombre de classes | 10 |
 
-Ces résultats correspondent au modèle existant. Les commandes de démarrage
-ci-dessous ne réentraînent pas le modèle.
+Ces résultats ont été vérifiés en chargeant le modèle entraîné et en l'évaluant sur le jeu de test CIFAR-10, sans effectuer de nouvel entraînement.
 
 ## Modèle et données
 
-- **Jeu de données :** CIFAR-10, 60 000 images RGB de 32 × 32 pixels réparties
-  en 10 classes (50 000 images d’entraînement et 10 000 de test).
-- **Architecture :** ResNet18, adaptée à 10 classes et initialisée avec
-  `weights=None`.
-- **Entraînement :** réalisé à partir de zéro, sans poids pré-entraînés et sans
-  Transfer Learning.
-- **Prétraitement d’entraînement :** retournement horizontal et recadrage
-  aléatoires, conversion en tenseur et normalisation RGB avec moyenne et
-  écart-type de 0,5.
-- **Prétraitement d’évaluation :** conversion en tenseur et même normalisation.
-- **Optimiseur et perte :** Adam et `CrossEntropyLoss`.
+### Jeu de données CIFAR-10
 
-Les transformations et le chargement de CIFAR-10 sont définis dans
-[`src/dataset.py`](src/dataset.py); l’architecture est définie dans
-[`src/model.py`](src/model.py).
+Le projet utilise le dataset CIFAR-10, composé de 60 000 images couleur RGB de dimensions 32 × 32 pixels :
 
-## Technologies
+- 50 000 images d'entraînement
+- 10 000 images de test
+- 10 catégories : avion, automobile, oiseau, chat, cerf, chien, grenouille, cheval, bateau et camion
 
-- Python, PyTorch et Torchvision
-- FastAPI et Uvicorn
-- Streamlit
-- MLflow
-- Docker et Docker Compose
-- Pytest
+### Architecture ResNet18
 
-Les versions des paquets sont indiquées dans [`requirements.txt`](requirements.txt).
+Le modèle repose sur ResNet18, un réseau de neurones convolutif utilisant des connexions résiduelles.
+
+La dernière couche entièrement connectée a été adaptée pour prédire les 10 classes de CIFAR-10.
+
+**Configuration :**
+- Framework : PyTorch
+- Architecture : ResNet18
+- Initialisation : `weights=None`
+- Optimiseur : Adam
+- Fonction de perte : `CrossEntropyLoss`
+- Taux d'apprentissage par défaut : 0,001
+- Taille des lots par défaut : 64
+
+Le modèle est entraîné à partir de zéro, sans poids pré-entraînés et sans Transfer Learning.
+
+### Prétraitement des images
+
+**Pendant l'entraînement :**
+- Retournement horizontal aléatoire
+- Recadrage aléatoire avec padding
+- Conversion des images en tenseurs
+- Normalisation RGB avec une moyenne et un écart-type de 0,5
+
+**Pendant l'évaluation :**
+- Conversion en tenseurs
+- Application de la même normalisation RGB
+
+Le chargement des données et les transformations sont définis dans [src/dataset.py](src/dataset.py).
+
+L'architecture du modèle est définie dans [src/model.py](src/model.py).
+
+## Technologies utilisées
+
+| Domaine | Technologies |
+|---|---|
+| Deep Learning | Python, PyTorch, Torchvision |
+| Computer Vision | ResNet18, CIFAR-10 |
+| API REST | FastAPI, Uvicorn |
+| Interface utilisateur | Streamlit |
+| Suivi des expériences | MLflow |
+| Conteneurisation | Docker, Docker Compose |
+| Tests automatisés | Pytest |
+
+Les dépendances Python sont indiquées dans [requirements.txt](requirements.txt).
 
 ## Fonctionnalités
 
 ### API FastAPI
 
-L’API charge `model.pt` au démarrage. Elle expose :
+L'API charge le modèle entraîné depuis `model.pt` au démarrage.
 
-- `GET /health` : état de santé de l’API.
-- `POST /predict` : reçoit une image PNG ou JPEG (maximum 10 Mio), la convertit
-  en RGB, la redimensionne à 32 × 32 puis applique la normalisation utilisée
-  pour l’évaluation.
+Elle propose deux endpoints :
 
-La réponse de prédiction conserve les champs :
+- `GET /health` : vérification de l'état de santé de l'API.
+- `POST /predict` : classification d'une image envoyée par l'utilisateur.
+
+L'API accepte les images PNG et JPEG, avec une taille maximale de 10 Mio.
+
+Les images sont converties en RGB, redimensionnées à 32 × 32 pixels, puis normalisées avant leur passage dans ResNet18.
+
+**Exemple de structure d'une réponse JSON :**
 
 ```json
 {
@@ -80,100 +108,204 @@ La réponse de prédiction conserve les champs :
 }
 ```
 
-Les valeurs ci-dessus illustrent uniquement la forme de la réponse; elles ne
-constituent pas une prédiction mesurée. La confiance est un score compris entre
-0 et 1. L’interface Streamlit affiche les noms des classes en français.
+Les valeurs de cet exemple sont fictives et servent uniquement à illustrer la structure de la réponse.
+
+Les scores de confiance sont compris entre 0 et 1.
 
 ### Interface Streamlit
 
-L’interface permet de sélectionner une image JPG ou PNG, d’en afficher l’aperçu,
-puis de demander une prédiction à l’API. Elle présente la classe prédite, son
-score de confiance et un graphique horizontal des trois classes les plus
-probables. L’adresse de l’API peut être configurée avec la variable
-d’environnement `API_URL`.
+Le projet comprend une interface web développée avec Streamlit, intitulée **CIFAR-10 Vision AI**.
 
-### Suivi des expériences
+L'interface est disponible en français et utilise un thème clair violet/lilas.
 
-Le script d’entraînement utilise MLflow pour enregistrer les paramètres et les
-métriques par époque. L’interface MLflow locale peut être lancée avec
-`mlflow ui` depuis la racine du dépôt.
+Elle permet de :
+
+- Importer une image JPG ou PNG.
+- Visualiser l'image sélectionnée.
+- Lancer une prédiction à partir de l'API FastAPI.
+- Afficher la catégorie prédite.
+- Consulter le score de confiance.
+- Visualiser les trois catégories les plus probables dans un graphique horizontal.
+
+L'interface conserve le résultat de la prédiction tant que l'image importée ne change pas.
+
+L'adresse de l'API peut être configurée à l'aide de la variable d'environnement `API_URL`.
+
+### Suivi des expériences avec MLflow
+
+Le script d'entraînement intègre MLflow pour enregistrer les paramètres et les performances du modèle.
+
+**Paramètres suivis :**
+- Nombre d'époques
+- Taille des lots
+- Taux d'apprentissage
+- Dispositif de calcul (CPU ou CUDA)
+
+**Métriques suivies :**
+- Perte d'entraînement
+- Précision d'entraînement
+- Perte d'évaluation
+- Précision d'évaluation
+- Précision finale
+
+Les poids entraînés sont sauvegardés dans `model.pt` et enregistrés comme artefact MLflow.
+
+## Télécharger le modèle entraîné
+
+Le fichier `model.pt` contient les poids du modèle ResNet18 entraîné.
+
+Il est disponible dans la **GitHub Release v1.0.0** du projet.
+
+**[📥 Télécharger le modèle entraîné (model.pt)](https://github.com/nourbokri-hub/cifar10-image-classifier/releases/download/v1.0.0/model.pt)**
+
+### Installation du modèle
+
+1. Téléchargez `model.pt` depuis le lien ci-dessus.
+2. Placez le fichier à la racine du projet, au même niveau que `requirements.txt` et `docker-compose.yml`.
+3. Lancez l'application en suivant les instructions ci-dessous.
+
+**Important :** `model.pt` est exclu du suivi Git afin de ne pas alourdir le dépôt. Son téléchargement est donc nécessaire après un nouveau clonage du projet.
+
+Le fichier n'est pas téléchargé automatiquement lors du démarrage de l'application.
 
 ## Installation et lancement local
 
-Les commandes suivantes sont à exécuter depuis la racine du projet. Vérifiez
-que `model.pt` s’y trouve avant de démarrer l’API.
+Les commandes suivantes doivent être exécutées depuis la racine du projet.
 
-### Environnement
+### 1. Cloner le dépôt
+
+```powershell
+git clone https://github.com/nourbokri-hub/cifar10-image-classifier.git
+cd cifar10-image-classifier
+```
+
+### 2. Créer l'environnement virtuel
 
 ```powershell
 python -m venv .venv
+```
+
+Activer l'environnement sous Windows PowerShell :
+
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
+
+### 3. Installer les dépendances
+
+```powershell
 python -m pip install -r requirements.txt
 ```
 
-### API
+### 4. Ajouter le modèle
+
+Téléchargez `model.pt` depuis la GitHub Release et placez-le à la racine du projet.
+
+Le fichier est indispensable au démarrage de l'API.
+
+### 5. Lancer FastAPI
 
 ```powershell
 uvicorn api.main:app --reload
 ```
 
-- API : <http://127.0.0.1:8000>
-- Documentation interactive : <http://127.0.0.1:8000/docs>
-- Contrôle de santé : <http://127.0.0.1:8000/health>
+Accès :
 
-### Interface
+- API : http://127.0.0.1:8000
+- Documentation Swagger : http://127.0.0.1:8000/docs
+- Contrôle de santé : http://127.0.0.1:8000/health
 
-Dans un second terminal, activez le même environnement puis lancez :
+### 6. Lancer Streamlit
+
+Dans un deuxième terminal, activez le même environnement virtuel, puis exécutez :
 
 ```powershell
 streamlit run streamlit_app/app.py
 ```
 
-L’interface est disponible par défaut sur <http://localhost:8501>. En exécution
-locale, l’application utilise par défaut `http://127.0.0.1:8000/predict`.
+L'interface est disponible à l'adresse :
 
-### MLflow
+http://localhost:8501
+
+En exécution locale, Streamlit utilise par défaut l'endpoint `http://127.0.0.1:8000/predict`.
+
+### 7. Consulter MLflow
 
 ```powershell
 mlflow ui
 ```
 
-L’interface est disponible par défaut sur <http://127.0.0.1:5000>.
+Interface MLflow :
 
-### Tests
-
-Depuis la racine du dépôt :
-
-```powershell
-pytest -v
-```
-
-Lors de la dernière exécution rapportée, **11 tests ont réussi**. Ce résultat
-est un relevé d’exécution et ne garantit pas celui d’un environnement différent.
+http://127.0.0.1:5000
 
 ## Lancement avec Docker Compose
 
-Docker Desktop (ou un moteur Docker compatible) doit être démarré. Le checkpoint
-`model.pt` doit être présent à la racine avant la construction : le
-[`Dockerfile de l’API`](docker/Dockerfile.api) le copie dans son image.
+Docker permet de lancer les composants applicatifs dans des conteneurs.
+
+Le fichier `docker-compose.yml` définit deux services :
+
+- **api** : backend FastAPI
+- **streamlit** : interface utilisateur
+
+### Démarrage
+
+Assurez-vous que Docker Desktop fonctionne et que `model.pt` se trouve à la racine du projet.
+
+Exécutez :
 
 ```powershell
-docker compose up --build
+docker compose up --build -d
 ```
 
-Compose démarre l’API et attend que son contrôle de santé `/health` réussisse
-avant de démarrer Streamlit. L’application utilise alors l’adresse interne
-`http://api:8000/predict`.
+Docker construit les images et démarre les deux services.
 
-- Interface Streamlit : <http://localhost:8501>
-- API FastAPI : <http://localhost:8000>
-- Documentation API : <http://localhost:8000/docs>
+Le service Streamlit utilise l'adresse interne `http://api:8000/predict` pour communiquer avec FastAPI.
 
-Pour arrêter les services, utilisez `Ctrl+C`, puis :
+Un contrôle de santé vérifie la disponibilité de l'API avant le démarrage du service Streamlit.
+
+### Accès à l'application
+
+- Streamlit : http://localhost:8501
+- FastAPI : http://localhost:8000
+- Documentation API : http://localhost:8000/docs
+
+### Vérification des conteneurs
+
+```powershell
+docker compose ps
+```
+
+### Arrêt des services
 
 ```powershell
 docker compose down
 ```
+
+## Tests automatisés
+
+Le projet utilise Pytest pour vérifier plusieurs composants.
+
+Les tests portent notamment sur :
+
+- La création du modèle ResNet18.
+- La forme de ses sorties.
+- La disponibilité des routes FastAPI.
+- Les prédictions sur des images PNG et JPEG.
+- Le rejet des images invalides.
+- Le rejet des formats non pris en charge.
+- Le rejet des images dépassant la taille autorisée.
+- La protection du checkpoint existant contre l'écrasement.
+
+### Exécution des tests
+
+```powershell
+python -m pytest -v
+```
+
+**Dernier résultat vérifié : 11 tests réussis sur 11.**
+
+Ce résultat correspond à l'environnement de développement utilisé et ne garantit pas automatiquement le même résultat sur toutes les configurations.
 
 ## Structure du dépôt
 
@@ -203,45 +335,39 @@ cifar10-image-classifier/
 ├── .dockerignore
 ├── .gitignore
 ├── docker-compose.yml
-├── README.md
-└── requirements.txt
+├── requirements.txt
+└── README.md
 ```
 
-`model.pt`, le dossier `data/`, les fichiers MLflow (`mlruns/` et
-`mlflow.db`) et l’environnement virtuel sont des éléments locaux ignorés par
-Git; ils ne figurent pas dans cette arborescence des fichiers suivis.
+Les éléments suivants sont utilisés localement et exclus du suivi Git :
 
-## Limites connues
+- `model.pt` : poids du modèle entraîné
+- `data/` : jeu de données CIFAR-10
+- `mlruns/` et `mlflow.db` : données de suivi MLflow
+- `.venv/` : environnement virtuel Python
 
-- Il n’existe pas de jeu de validation indépendant : le jeu de test CIFAR-10
-  est utilisé pour calculer les métriques nommées `val_loss` et `val_acc` à
-  chaque époque du script d’entraînement.
-- Le dépôt ne fournit pas encore de matrice de confusion ni d’analyse
-  détaillée des résultats par classe.
-- `model.pt` est requis pour utiliser l’API et construire son image Docker, mais
-  il est exclu de Git. Un clone du dépôt seul ne suffit donc pas pour lancer
-  ces composants.
-- Le script d’entraînement refuse de démarrer lorsqu’un `model.pt` existe déjà,
-  afin d’éviter son écrasement accidentel. Aucune des commandes de démarrage
-  documentées ci-dessus ne lance cet entraînement.
+## Limites du projet
+
+Le projet présente certaines limites :
+
+- Aucun jeu de validation indépendant n'est utilisé pendant l'entraînement actuel.
+- Les métriques `val_loss` et `val_acc` sont calculées sur le jeu de test CIFAR-10 après chaque époque.
+- Aucune matrice de confusion n'est encore fournie.
+- Les performances détaillées par classe ne sont pas disponibles.
+- Le fichier `model.pt` doit être téléchargé séparément pour exécuter les prédictions.
+
+Le script d'entraînement comporte également une protection empêchant l'écrasement accidentel d'un checkpoint existant.
 
 ## Auteurs
 
 - Nour Bokri
 - Farah Jamai
 - Cyrine Daghfous
-## Télécharger le modèle entraîné
 
-Le modèle ResNet18 entraîné est disponible dans les **GitHub Releases** du projet.
+## Conclusion
 
-**[Télécharger le m odèle](https://github.com/nourbokri-hub/cifar10-image-classifier/releases/download/v1.0.0/model.pt)[`model.pt`](https://github.com/nourbokri-hub/cifar10-image-classifier/releases/download/v1.0.0/model.pt)**
+Ce projet présente une application de classification d'images basée sur un modèle **ResNet18 entraîné avec PyTorch**, associée à une API FastAPI et à une interface Streamlit.
 
-### Installation du modèle
+Le modèle a obtenu une précision de **77,92 % sur le jeu de test CIFAR-10**, composé de 10 000 images.
 
-1. Téléchargez le fichier `model.pt` depuis le lien ci-dessus.
-2. Placez-le à la racine du projet, au même niveau que `requirements.txt` et `docker-compose.yml`.
-3. Lancez l'application en suivant les instructions d'installation.
-
-Le modèle a obtenu une précision de **77,92 %** sur les 10 000 images du jeu de test CIFAR-10.
-
-Le fichier `model.pt` n'est pas suivi directement par Git afin d'éviter d'alourdir le dépôt.
+L'intégration de MLflow, Docker et Pytest permet également d'aborder différentes pratiques liées au développement, au suivi des expériences, aux tests et à l'exécution d'applications de Machine Learning.
