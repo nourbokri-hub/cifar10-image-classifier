@@ -1,4 +1,6 @@
+import pytest
 import torch
+
 from src.model import get_model
 
 
@@ -17,3 +19,17 @@ def test_model_output_shape():
         y = model(x)
 
     assert y.shape == (1, 10)
+
+
+def test_training_refuses_to_overwrite_existing_checkpoint(tmp_path, monkeypatch):
+    import src.training as training
+
+    checkpoint = tmp_path / "model.pt"
+    original_contents = b"existing checkpoint"
+    checkpoint.write_bytes(original_contents)
+    monkeypatch.setattr(training, "MODEL_PATH", checkpoint)
+
+    with pytest.raises(FileExistsError, match="Refusing to overwrite"):
+        training.main()
+
+    assert checkpoint.read_bytes() == original_contents

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,6 +7,8 @@ import mlflow
 
 from src.dataset import get_dataloaders
 from src.model import get_model
+
+MODEL_PATH = Path(__file__).resolve().parents[1] / "model.pt"
 
 
 def train_one_epoch(model, loader, criterion, optimizer, device):
@@ -58,6 +62,11 @@ def main(epochs=10, batch_size=64, lr=1e-3):
     """
     Simple but professional baseline training with MLflow tracking.
     """
+    if MODEL_PATH.exists():
+        raise FileExistsError(
+            f"Refusing to overwrite the existing model checkpoint: {MODEL_PATH}"
+        )
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     train_loader, test_loader = get_dataloaders(batch_size=batch_size)
 
@@ -90,8 +99,8 @@ def main(epochs=10, batch_size=64, lr=1e-3):
         final_accuracy = val_acc * 100
         print(f"Final Test Accuracy: {final_accuracy:.2f}%")
         mlflow.log_metric("final_accuracy", final_accuracy)
-        torch.save(model.state_dict(), "model.pt")
-        mlflow.log_artifact("model.pt")
+        torch.save(model.state_dict(), MODEL_PATH)
+        mlflow.log_artifact(str(MODEL_PATH))
 
 
 if __name__ == "__main__":
