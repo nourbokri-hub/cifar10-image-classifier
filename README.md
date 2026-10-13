@@ -230,3 +230,18 @@ Git; ils ne figurent pas dans cette arborescence des fichiers suivis.
 - Nour Bokri
 - Farah Jamai
 - Cyrine Daghfous
+## Télécharger le modèle entraîné
+
+Le modèle ResNet18 entraîné est disponible dans les **GitHub Releases** du projet.
+
+**[Télécharger le m odèle](https://github.com/nourbokri-hub/cifar10-image-classifier/releases/download/v1.0.0/model.pt)[`model.pt`](https://github.com/nourbokri-hub/cifar10-image-classifier/releases/download/v1.0.0/model.pt)**
+
+### Installation du modèle
+
+1. Téléchargez le fichier `model.pt` depuis le lien ci-dessus.
+2. Placez-le à la racine du projet, au même niveau que `requirements.txt` et `docker-compose.yml`.
+3. Lancez l'application en suivant les instructions d'installation.
+
+Le modèle a obtenu une précision de **77,92 %** sur les 10 000 images du jeu de test CIFAR-10.
+
+Le fichier `model.pt` n'est pas suivi directement par Git afin d'éviter d'alourdir le dépôt.
